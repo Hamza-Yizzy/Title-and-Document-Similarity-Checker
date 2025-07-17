@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Book - Similarity Checker</title>
+    <style>
+        /* Styling for the form and error messages */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fc;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            width: 50%;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #444;
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"], input[type="number"], input[type="file"] {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%; /* Make button fill the container width */
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        /* Back Button Styling */
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 16px;
+            margin-top: 20px;
+            width: 94.5%; /* Make button fill the container width */
+            text-align: center; /* Center the text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .back-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Register a New Book</h1>
+
+    <form id="registrationForm" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <label for="book_title">Book Title:</label>
+        {{ form.book_title }}
+
+        <label for="authors">Authors:</label>
+        {{ form.authors }}
+
+        <label for="area">Area:</label>
+        {{ form.area }}
+
+        <label for="year">Year:</label>
+        {{ form.year }}
+
+        <label for="file">Book File (PDF, DOCX  only):</label>
+        {{ form.file }}
+
+        <!-- Error message for invalid file types -->
+        <div id="fileError" class="error">Invalid file type. Only PDF, DOCX  files are allowed.</div>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <!-- Back Button to navigate to Book List page -->
+    <a href="{% url 'books_list' %}" class="back-btn">Back to Book List</a>
+</div>
+
+<script>
+    // Validate the file extension before submitting the form
+    document.getElementById('registrationForm').addEventListener('submit', function(event) {
+        var fileInput = document.querySelector('input[type="file"]');
+        var filePath = fileInput.value;
+        var allowedExtensions = /(\.pdf|\.docx)$/i;
+
+        // Check if file extension is valid
+        if (!allowedExtensions.exec(filePath)) {
+            event.preventDefault();  // Prevent form submission
+            document.getElementById('fileError').style.display = 'block';  // Show error message
+        } else {
+            document.getElementById('fileError').style.display = 'none';  // Hide error message
+        }
+    });
+</script>
+
+</body>
+</html>

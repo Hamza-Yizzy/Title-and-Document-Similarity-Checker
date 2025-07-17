@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ form.instance.pk|default:"Add Book" }} - Similarity Checker</title>
+    <style>
+        /* Basic Styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fc;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 60%;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #444;
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"], input[type="number"], input[type="file"] {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .file-name {
+            font-size: 14px;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        .back-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* Drag and drop styling */
+        .drag-drop-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            border: 2px dashed #28a745;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #f8f9fa;
+            margin-top: 10px;
+        }
+
+        .drag-drop-container:hover {
+            background-color: #e2e6ea;
+        }
+
+        .drag-drop-container p {
+            margin: 0;
+            font-size: 18px;
+            color: #555;
+        }
+
+        /* File input hidden */
+        .drag-drop-container input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>{{ form.instance.pk|default:"Add Book" }}</h1>
+
+    <!-- Book Form -->
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div>
+            <label for="book_title">Book Title:</label>
+            {{ form.book_title }}
+        </div>
+        <div>
+            <label for="authors">Authors:</label>
+            {{ form.authors }}
+        </div>
+        <div>
+            <label for="area">Area:</label>
+            {{ form.area }}
+        </div>
+        <div>
+            <label for="year">Year:</label>
+            {{ form.year }}
+        </div>
+
+        <!-- Drag and Drop File Input -->
+        <div class="drag-drop-container" id="drag-drop-container">
+            <input type="file" id="file1" name="file" accept=".pdf,.docx,.txt,.pptx,.xlsx">
+            <p>Drag and drop a file here or click to select a file</p>
+        </div>
+
+        <!-- Display current file if exists -->
+        {% if form.instance.file %}
+            <div class="file-name">
+                <strong>Current File: </strong> <a href="{{ form.instance.file.url }}" target="_blank">{{ form.instance.file.name }}</a>
+            </div>
+        {% endif %}
+
+        <button type="submit">{{ form.instance.pk|default:"Add Book" }}</button>
+    </form>
+
+    <!-- Back Button -->
+    <a href="{% url 'books_list' %}" class="back-btn">Back to Book List</a>
+</div>
+
+<!-- JavaScript for drag-and-drop functionality -->
+<script>
+    // Handle file drag-and-drop
+    const dropContainer = document.getElementById('drag-drop-container');
+    const fileInput = document.getElementById('file1');
+
+    dropContainer.addEventListener('dragover', function(event) {
+        event.preventDefault();
+        dropContainer.style.backgroundColor = '#e2e6ea';
+    });
+
+    dropContainer.addEventListener('dragleave', function(event) {
+        dropContainer.style.backgroundColor = '#f8f9fa';
+    });
+
+    dropContainer.addEventListener('drop', function(event) {
+        event.preventDefault();
+        dropContainer.style.backgroundColor = '#f8f9fa';
+
+        const file = event.dataTransfer.files[0]; // Get the file from the drop
+        fileInput.files = event.dataTransfer.files; // Set file input with dropped file
+    });
+
+    // Open the file picker when user clicks on the drop area
+    dropContainer.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    // Update the displayed file name when a file is selected or dropped
+    fileInput.addEventListener('change', function() {
+        const fileName = fileInput.files[0] ? fileInput.files[0].name : '';
+        if (fileName) {
+            dropContainer.querySelector('p').innerText = 'Selected file: ' + fileName;
+        } else {
+            dropContainer.querySelector('p').innerText = 'Drag and drop a file here or click to select a file';
+        }
+    });
+</script>
+
+</body>
+</html>
