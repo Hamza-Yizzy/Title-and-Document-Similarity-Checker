@@ -145,3 +145,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True        # End session on browser/tab close
 SESSION_COOKIE_AGE = 30  # 30 seconds
 SESSION_SAVE_EVERY_REQUEST = True             # Reset timer on each request
+
+
+
+
+
+
