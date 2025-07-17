@@ -1,144 +1,111 @@
+{% load static %}
+{% load widget_tweaks %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register Book - Similarity Checker</title>
-    <style>
-        /* Styling for the form and error messages */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f7fc;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .container {
-            width: 50%;
-            margin: 50px auto;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            text-align: center;
-            color: #444;
-            margin-bottom: 20px;
-        }
-
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-
-        input[type="text"], input[type="number"], input[type="file"] {
-            padding: 10px;
-            font-size: 16px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%; /* Make button fill the container width */
-        }
-
-        button:hover {
-            background-color: #218838;
-        }
-
-        .error {
-            color: red;
-            font-size: 14px;
-            margin-top: -10px;
-            margin-bottom: 10px;
-            display: none;
-        }
-
-        /* Back Button Styling */
-        .back-btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border-radius: 5px;
-            text-decoration: none;
-            font-size: 16px;
-            margin-top: 20px;
-            width: 94.5%; /* Make button fill the container width */
-            text-align: center; /* Center the text */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .back-btn:hover {
-            background-color: #0056b3;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register Book - Similarity Checker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
 </head>
-<body>
+<body class="bg-gradient-to-r from-blue-400 to-purple-500 min-h-screen flex items-center justify-center p-6">
 
-<div class="container">
-    <h1>Register a New Book</h1>
+<div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-8">
+  <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">
+    <span class="me-2">📚</span>Register a New Book
+  </h1>
 
-    <form id="registrationForm" method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
+  <form id="registrationForm" method="POST" enctype="multipart/form-data" class="space-y-5">
+    {% csrf_token %}
 
-        <label for="book_title">Book Title:</label>
-        {{ form.book_title }}
+    <!-- Book Title -->
+    <div class="flex flex-wrap items-center gap-3">
+      <label for="book_title" class="w-full md:w-1/4 font-medium text-gray-700">Book Title:</label>
+      <div class="w-full md:w-3/4">
+        {{ form.book_title|add_class:"form-control py-2 text-base border-gray-300 rounded-md shadow-sm" }}
+      </div>
+    </div>
 
-        <label for="authors">Authors:</label>
-        {{ form.authors }}
+    <!-- Authors -->
+    <div class="flex flex-wrap items-center gap-3">
+      <label for="authors" class="w-full md:w-1/4 font-medium text-gray-700">Authors:</label>
+      <div class="w-full md:w-3/4">
+        {{ form.authors|add_class:"form-control py-2 text-base border-gray-300 rounded-md shadow-sm" }}
+      </div>
+    </div>
 
-        <label for="area">Area:</label>
-        {{ form.area }}
+    <!-- Area -->
+    <div class="flex flex-wrap items-center gap-3">
+      <label for="area" class="w-full md:w-1/4 font-medium text-gray-700">Area:</label>
+      <div class="w-full md:w-3/4">
+        {{ form.area|add_class:"form-control py-2 text-base border-gray-300 rounded-md shadow-sm" }}
+      </div>
+    </div>
 
-        <label for="year">Year:</label>
-        {{ form.year }}
+    <!-- Year (Dropdown) -->
+    <div class="flex flex-wrap items-center gap-3">
+      <label for="year" class="w-full md:w-1/4 font-medium text-gray-700">Year:</label>
+      <div class="w-full md:w-3/4">
+        <select id="year" name="year" required
+          class="form-select w-full py-2 text-base border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          <option value="">-- Select Year --</option>
+        </select>
+      </div>
+    </div>
 
-        <label for="file">Book File (PDF, DOCX  only):</label>
-        {{ form.file }}
+    <!-- File -->
+    <div class="flex flex-wrap items-center gap-3">
+      <label for="file" class="w-full md:w-1/4 font-medium text-gray-700">Book File (PDF only):</label>
+      <div class="w-full md:w-3/4">
+        {{ form.file|add_class:"form-control py-2 text-base border-gray-300 rounded-md shadow-sm" }}
+        <p id="fileError" class="text-red-600 text-sm mt-2 hidden">Invalid file type. Only PDF files are allowed.</p>
+      </div>
+    </div>
 
-        <!-- Error message for invalid file types -->
-        <div id="fileError" class="error">Invalid file type. Only PDF, DOCX  files are allowed.</div>
+    <!-- Submit -->
+    <div>
+      <button type="submit"
+        class="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md shadow-sm transition duration-200">
+        Submit
+      </button>
+    </div>
+  </form>
 
-        <button type="submit">Submit</button>
-    </form>
-
-    <!-- Back Button to navigate to Book List page -->
-    <a href="{% url 'books_list' %}" class="back-btn">Back to Book List</a>
+  <!-- Back Button -->
+  <a href="{% url 'books_list' %}"
+    class="mt-5 block text-center w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm transition duration-200">
+    ← Back to Book List
+  </a>
 </div>
 
+<!-- JS: Populate Year Dropdown (Descending) & File Validation -->
 <script>
-    // Validate the file extension before submitting the form
-    document.getElementById('registrationForm').addEventListener('submit', function(event) {
-        var fileInput = document.querySelector('input[type="file"]');
-        var filePath = fileInput.value;
-        var allowedExtensions = /(\.pdf|\.docx)$/i;
+  const yearSelect = document.getElementById("year");
+  const selectedYear = "{{ form.year.value|default:'' }}";
 
-        // Check if file extension is valid
-        if (!allowedExtensions.exec(filePath)) {
-            event.preventDefault();  // Prevent form submission
-            document.getElementById('fileError').style.display = 'block';  // Show error message
-        } else {
-            document.getElementById('fileError').style.display = 'none';  // Hide error message
-        }
-    });
+  for (let i = 2025; i >= 1; i--) {
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = i;
+    if (selectedYear && i.toString() === selectedYear) {
+      option.selected = true;
+    }
+    yearSelect.appendChild(option);
+  }
+
+  document.getElementById('registrationForm').addEventListener('submit', function (event) {
+    const fileInput = document.querySelector('input[type="file"]');
+    const filePath = fileInput.value;
+    const allowedExtensions = /\.pdf$/i;
+
+    if (!allowedExtensions.exec(filePath)) {
+      event.preventDefault();
+      document.getElementById('fileError').classList.remove('hidden');
+    } else {
+      document.getElementById('fileError').classList.add('hidden');
+    }
+  });
 </script>
 
 </body>

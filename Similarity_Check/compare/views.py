@@ -1,45 +1,37 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse, Http404
 from .models import Book
 from .forms import BookForm
 import PyPDF2
-import docx
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
-from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
+from django.utils.encoding import smart_str
 
 def logout_view(request):
-    logout(request)  # Logs the user out
-    return redirect('login')  # Redirect to the login page after logout
+    logout(request)
+    return redirect('login')
 
-# Login View
 def login_view(request):
-    # If the user is already authenticated, redirect them to the dashboard
     if request.user.is_authenticated:
-        return redirect('dashboard')  # Redirect to dashboard if the user is already logged in
-
+        return redirect('dashboard')
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
-
-        # Authenticate the user using Django's built-in authentication
         user = authenticate(request, username=username, password=password)
-        
         if user is not None:
-            login(request, user)  # Log the user in
-            return redirect('dashboard')  # Redirect to the dashboard page after login
+            login(request, user)
+            return redirect('dashboard')
         else:
-            messages.error(request, "Invalid username or password")  # Show error if login fails
+            messages.error(request, "Invalid username or password")
+    return render(request, 'compare/login.html')
 
-    return render(request, 'compare/login.html')  # Render the login page if not POST or failed login
-
-# Function to read PDF files
+# ✅ Only allow PDF
 def read_pdf(file):
     try:
         reader = PyPDF2.PdfReader(file)
@@ -52,26 +44,14 @@ def read_pdf(file):
     except Exception as e:
         return f"Error extracting PDF content: {str(e)}"
 
-# Function to read DOCX files
-def read_docx(file):
-    try:
-        doc = docx.Document(file)
-        text = "\n".join([para.text for para in doc.paragraphs])
-        return text
-    except Exception as e:
-        return f"Error extracting DOCX content: {str(e)}"
-
-# Function to extract content from uploaded file
+# ✅ Removed DOCX logic - accept only PDF
 def extract_file_content(file):
     ext = file.name.split('.')[-1].lower()
     if ext == 'pdf':
         return read_pdf(file)
-    elif ext == 'docx':
-        return read_docx(file)
     else:
-        return None  # Unsupported file type
+        return None
 
-# Function to calculate cosine similarity using TF-IDF
 def calculate_similarity(text1, text2):
     try:
         tfidf_vectorizer = TfidfVectorizer(stop_words='english')
@@ -82,14 +62,12 @@ def calculate_similarity(text1, text2):
         print(f"Error calculating similarity: {str(e)}")
         return 0.0
 
-# Function to check title in the database
 def check_title(request):
     message = ''
     if request.method == 'POST':
         title = request.POST.get('title')
         normalized_title = title.strip().lower()
         books = Book.objects.filter(book_title__icontains=title)
-
         matched_books = [book for book in books if book.book_title.strip().lower() == normalized_title]
         if matched_books:
             matched_book = matched_books[0]
@@ -98,26 +76,37 @@ def check_title(request):
             message = f"No books found matching the title '{title}'."
     return render(request, 'compare/check_title.html', {'message': message})
 
-# Function to compare uploaded file content
+# ✅ View only PDF files
+def view_book_file(request, book_id):
+    try:
+        book = Book.objects.get(book_id=book_id)
+        file_path = book.file.path
+        ext = book.file.name.split('.')[-1].lower()
+        if ext != 'pdf':
+            raise Http404("Only PDF files are viewable.")
+        response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{smart_str(book.file.name)}"'
+        return response
+    except Book.DoesNotExist:
+        raise Http404("Book not found.")
+    except Exception as e:
+        raise Http404(f"Error loading file: {e}")
+
 def compare_uploaded_books(request):
     if request.method == 'POST' and request.FILES.get('file1'):
         file1 = request.FILES['file1']
         uploaded_content = extract_file_content(file1)
-
         if not uploaded_content:
             return render(request, 'compare/compare_result.html', {
                 'message': 'Failed to extract content. Unsupported file type or empty content.'
             })
-
         file_name = os.path.splitext(file1.name)[0].strip().lower()
         books = Book.objects.all()
         matched_book = None
-
         for book in books:
-            if file_name == book.book_title.strip().lower():  # Title match
+            if file_name == book.book_title.strip().lower():
                 matched_book = book
                 break
-
         if matched_book:
             matched_file_content = extract_file_content(matched_book.file)
             if matched_file_content:
@@ -125,14 +114,11 @@ def compare_uploaded_books(request):
                 eligibility_message = "Your book is eligible."
                 if similarity > 0.20:
                     eligibility_message = "Your book is not eligible due to high similarity."
-
                 return render(request, 'compare/compare_result.html', {
                     'most_similar_book': matched_book,
                     'similarity_percentage': round(similarity * 100, 2),
                     'eligibility_message': eligibility_message
                 })
-
-        # Compare with all books in database
         highest_similarity = 0
         most_similar_book = None
         for book in books:
@@ -143,34 +129,27 @@ def compare_uploaded_books(request):
                     if similarity > highest_similarity:
                         highest_similarity = similarity
                         most_similar_book = book
-
         eligibility_message = "Your book is eligible."
         if highest_similarity > 0.20:
             eligibility_message = "Your book is not eligible due to high similarity."
-
         return render(request, 'compare/compare_result.html', {
             'most_similar_book': most_similar_book,
             'similarity_percentage': round(highest_similarity * 100, 2),
             'eligibility_message': eligibility_message
         })
-
     return redirect('index')
 
-# Dashboard page
 @login_required
 def dashboard(request):
     return render(request, 'compare/dashboard.html')
 
-# Home page view
 def index(request):
     return render(request, 'compare/index.html')
 
-# View to list all books
 def books_list(request):
     books = Book.objects.all()
     return render(request, 'compare/book_list.html', {'books': books})
 
-# View to add or edit a book
 def add_or_edit_book(request, book_id=None):
     book = get_object_or_404(Book, book_id=book_id) if book_id else None
     form = BookForm(request.POST or None, request.FILES or None, instance=book)
@@ -179,7 +158,6 @@ def add_or_edit_book(request, book_id=None):
         return redirect('books_list')
     return render(request, 'compare/registration.html', {'form': form})
 
-# View to delete a book
 def delete_book(request, book_id):
     book = get_object_or_404(Book, book_id=book_id)
     if request.method == 'POST':
@@ -187,14 +165,13 @@ def delete_book(request, book_id):
         return redirect('books_list')
     return render(request, 'compare/delete_book.html', {'book': book})
 
-# View to handle file upload via AJAX
+# ✅ Allow only PDF in AJAX uploads
 def handle_uploaded_file(request):
     if request.method == 'POST' and request.FILES.get('file'):
         file = request.FILES['file']
-        allowed_extensions = ['pdf', 'docx']
         ext = file.name.split('.')[-1].lower()
-        if ext not in allowed_extensions:
-            return JsonResponse({'error': 'Unsupported file extension. Only PDF and DOCX are allowed.'}, status=400)
+        if ext != 'pdf':
+            return JsonResponse({'error': 'Only PDF files are allowed.'}, status=400)
         file_content = extract_file_content(file)
         if file_content:
             return JsonResponse({'file_content': file_content})
