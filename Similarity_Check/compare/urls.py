@@ -14,4 +14,11 @@ urlpatterns = [
     path('book/delete/<int:book_id>/', views.delete_book, name='delete_book'),
     path('index/', views.index, name='index'),
     path('check-title/', views.check_title, name='check_title'),
+    path('admin-dashboard/', views.dashboard, name='dashboard'),
+    path('register-user/', views.register_user, name='register_user'),
+    path('register-user/', views.register_user, name='register_user'),
+    path('users/', views.users_list, name='users_list'),
+    path('books/', views.books_list, name='books_list'),  # Already present
+
+
 ]

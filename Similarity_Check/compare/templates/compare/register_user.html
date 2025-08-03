@@ -1,0 +1,39 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Register New User{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto mt-10 bg-white p-8 rounded shadow">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6">👤 Register New User</h2>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% for field in form %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700">{{ field.label_tag }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <p class="text-red-600 text-sm">{{ field.errors }}</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <!-- ✅ Role Selection Dropdown -->
+        <div>
+            <label for="role" class="block text-sm font-medium text-gray-700">Select Role</label>
+            <select name="role" id="role" required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                <option value="">-- Choose Role --</option>
+                <option value="Admin">Admin</option>
+                <option value="Supervisor">Supervisor</option>
+                <option value="Student">Student</option>
+            </select>
+        </div>
+
+        <button type="submit"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+            Create User
+        </button>
+    </form>
+</div>
+{% endblock %}

@@ -12,6 +12,15 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.utils.encoding import smart_str
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.models import Group
+
+
 
 def logout_view(request):
     logout(request)
@@ -30,6 +39,39 @@ def login_view(request):
         else:
             messages.error(request, "Invalid username or password")
     return render(request, 'compare/login.html')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def register_user(request):
+    form = UserCreationForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = form.save()
+        role = request.POST.get('role')
+
+        if role:
+            group, created = Group.objects.get_or_create(name=role)
+            user.groups.add(group)
+
+        messages.success(request, "User created successfully.")
+        return redirect('dashboard')
+
+    return render(request, 'compare/register_user.html', {'form': form})
+
+
+def get_user_role(user):
+    if user.is_superuser:
+        return 'Admin'
+    elif user.groups.filter(name='Supervisor').exists():
+        return 'Supervisor'
+    else:
+        return 'Student'
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def users_list(request):
+    users = User.objects.all()
+    return render(request, 'compare/users_list.html', {'users': users})
 
 # ✅ Only allow PDF
 def read_pdf(file):
@@ -82,11 +124,19 @@ def view_book_file(request, book_id):
         book = Book.objects.get(book_id=book_id)
         file_path = book.file.path
         ext = book.file.name.split('.')[-1].lower()
-        if ext != 'pdf':
-            raise Http404("Only PDF files are viewable.")
-        response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
-        response['Content-Disposition'] = f'inline; filename="{smart_str(book.file.name)}"'
-        return response
+
+        if ext == 'pdf':
+            # View PDF inline
+            response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="{smart_str(book.file.name)}"'
+            return response
+        elif ext in ['doc', 'docx']:
+            # Download Word document
+            response = FileResponse(open(file_path, 'rb'), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            response['Content-Disposition'] = f'attachment; filename="{smart_str(book.file.name)}"'
+            return response
+        else:
+            raise Http404("Unsupported file type.")
     except Book.DoesNotExist:
         raise Http404("Book not found.")
     except Exception as e:
@@ -141,7 +191,9 @@ def compare_uploaded_books(request):
 
 @login_required
 def dashboard(request):
-    return render(request, 'compare/dashboard.html')
+    role = get_user_role(request.user)
+    return render(request, 'compare/dashboard.html', {'role': role})
+
 
 def index(request):
     return render(request, 'compare/index.html')

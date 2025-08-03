@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Similarity Checker{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex h-screen bg-gray-100 font-sans">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-white border-r shadow-md hidden md:flex flex-col justify-between">
+    <div>
+      <div class="p-6 bg-blue-600 text-white text-center text-2xl font-bold tracking-wide">
+        Similarity Checker
+      </div>
+      <nav class="p-4 space-y-2">
+        {% if role == "Admin" or role == "Supervisor" %}
+          <a href="{% url 'add_book' %}" class="flex items-center px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-md text-blue-800">📚 <span class="ml-2">Register Book</span></a>
+          <a href="{% url 'books_list' %}" class="flex items-center px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-md text-blue-800">📘 <span class="ml-2">View Books</span></a>
+        {% endif %}
+        {% if role == "Admin" %}
+          <a href="{% url 'register_user' %}" class="flex items-center px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-md text-blue-800">👤 <span class="ml-2">Register User</span></a>
+          <a href="{% url 'users_list' %}" class="flex items-center px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-md text-blue-800">👥 <span class="ml-2">View Users</span></a>
+        {% endif %}
+        <a href="{% url 'check_title' %}" class="flex items-center px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-md text-blue-800">🔍 <span class="ml-2">Check Title</span></a>
+        <a href="{% url 'index' %}" class="flex items-center px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-md text-blue-800">📄 <span class="ml-2">Check Document</span></a>
+      </nav>
+    </div>
+    <div class="p-4">
+      <a href="{% url 'logout' %}" class="flex items-center px-4 py-2 bg-red-100 hover:bg-red-200 rounded-md text-red-700 w-full">🚪 <span class="ml-2">Logout</span></a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-8 overflow-y-auto">
+    {% block content %}
+    <!-- Page-specific content will go here -->
+    {% endblock %}
+  </main>
+
+</body>
+</html>

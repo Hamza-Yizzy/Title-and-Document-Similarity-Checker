@@ -56,10 +56,10 @@
 
     <!-- File -->
     <div class="flex flex-wrap items-center gap-3">
-      <label for="file" class="w-full md:w-1/4 font-medium text-gray-700">Book File (PDF only):</label>
+      <label for="file" class="w-full md:w-1/4 font-medium text-gray-700">Book File (PDF or Word):</label>
       <div class="w-full md:w-3/4">
         {{ form.file|add_class:"form-control py-2 text-base border-gray-300 rounded-md shadow-sm" }}
-        <p id="fileError" class="text-red-600 text-sm mt-2 hidden">Invalid file type. Only PDF files are allowed.</p>
+        <p id="fileError" class="text-red-600 text-sm mt-2 hidden">Invalid file type. Only PDF, DOC, or DOCX files are allowed.</p>
       </div>
     </div>
 
@@ -97,7 +97,7 @@
   document.getElementById('registrationForm').addEventListener('submit', function (event) {
     const fileInput = document.querySelector('input[type="file"]');
     const filePath = fileInput.value;
-    const allowedExtensions = /\.pdf$/i;
+    const allowedExtensions = /\.(pdf|doc|docx)$/i;
 
     if (!allowedExtensions.exec(filePath)) {
       event.preventDefault();
