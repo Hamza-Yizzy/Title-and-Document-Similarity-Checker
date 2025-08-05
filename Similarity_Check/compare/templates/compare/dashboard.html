@@ -1,105 +1,201 @@
+{% extends 'base_dashboard.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard - Similarity Checker</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" href="{% static 'images/favicon.png' %}">
-</head>
-<body class="flex h-screen bg-gray-100 font-sans">
 
-  <!-- Sidebar -->
-  <aside class="w-64 bg-white border-r shadow-lg hidden md:flex flex-col justify-between">
-    <div>
-      <div class="p-6 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-center text-2xl font-bold tracking-wide rounded-b-xl">
-        📚 Similarity Checker
-      </div>
-      <div class="flex justify-center mt-4 mb-2">
-        <img src="{% static 'images/avatar.png' %}" alt="User" class="h-16 w-16 rounded-full border-2 border-blue-600">
-      </div>
-      <p class="text-center text-sm text-gray-600 mb-4">Logged in as <span class="font-medium">{{ user.username }}</span></p>
+{% block title %}Dashboard - Similarity Checker{% endblock %}
 
-      <nav class="p-4 space-y-2">
-        {% if role == "Admin" or role == "Supervisor" %}
-          <a href="{% url 'add_book' %}" class="flex items-center px-4 py-2 hover:bg-blue-50 rounded-md text-blue-700 font-medium">
-            📚 <span class="ml-2">Register Book</span>
-          </a>
-          <a href="{% url 'books_list' %}" class="flex items-center px-4 py-2 hover:bg-blue-50 rounded-md text-blue-700 font-medium">
-            📘 <span class="ml-2">View Books</span>
-          </a>
-        {% endif %}
-        {% if role == "Admin" %}
-          <a href="{% url 'register_user' %}" class="flex items-center px-4 py-2 hover:bg-blue-50 rounded-md text-blue-700 font-medium">
-            👤 <span class="ml-2">Register User</span>
-          </a>
-          <a href="{% url 'users_list' %}" class="flex items-center px-4 py-2 hover:bg-blue-50 rounded-md text-blue-700 font-medium">
-            👥 <span class="ml-2">View Users</span>
-          </a>
-        {% endif %}
-        <a href="{% url 'check_title' %}" class="flex items-center px-4 py-2 hover:bg-blue-50 rounded-md text-blue-700 font-medium">
-          🔍 <span class="ml-2">Check Title</span>
-        </a>
-        <a href="{% url 'index' %}" class="flex items-center px-4 py-2 hover:bg-blue-50 rounded-md text-blue-700 font-medium">
-          📄 <span class="ml-2">Check Document</span>
-        </a>
-      </nav>
-    </div>
-    <div class="p-4 border-t">
-      <a href="{% url 'logout' %}" class="flex items-center px-4 py-2 bg-red-50 hover:bg-red-100 rounded-md text-red-700 font-medium w-full">
-        🚪 <span class="ml-2">Logout</span>
-      </a>
-    </div>
-  </aside>
+{% block content %}
+<!-- Welcome -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+  <div>
+    <h1 class="text-4xl font-extrabold text-gray-900 mb-1">Welcome, {{ user.username }} 👋</h1>
+    <p class="text-gray-700">Your role: <span class="font-semibold text-blue-600">{{ role }}</span></p>
+  </div>
+</div>
 
-  <!-- Main Content -->
-  <main class="flex-1 p-8 overflow-y-auto">
-    <div class="mb-6">
-      <h1 class="text-4xl font-extrabold text-gray-800">Welcome, {{ user.username }} 👋</h1>
-      <p class="text-gray-500 mt-1 text-lg">Your role: <span class="font-semibold capitalize">{{ role }}</span></p>
-    </div>
+<!-- Summary Cards -->
+<div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+  <!-- Total Users -->
+  <div class="bg-blue-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-blue-800 font-semibold text-lg mb-1">👥 Total Users</h2>
+    <p class="text-3xl font-bold text-blue-900">{{ total_users }}</p>
+  </div>
 
-    <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-      {% if role == "Admin" or role == "Supervisor" %}
-        <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition duration-200">
-          <h2 class="text-xl font-semibold text-blue-700 mb-2">📚 Register New Book</h2>
-          <p class="text-gray-600 mb-3">Add a new book to the database.</p>
-          <a href="{% url 'add_book' %}" class="text-blue-600 font-medium hover:underline">Go to Register Book</a>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition duration-200">
-          <h2 class="text-xl font-semibold text-blue-700 mb-2">📘 View All Books</h2>
-          <p class="text-gray-600 mb-3">Browse all registered books.</p>
-          <a href="{% url 'books_list' %}" class="text-blue-600 font-medium hover:underline">Go to Books List</a>
-        </div>
-      {% endif %}
+  <!-- Admins -->
+  <div class="bg-green-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-green-800 font-semibold text-lg mb-1">🛡️ Admins</h2>
+    <p class="text-3xl font-bold text-green-900">{{ total_admins }}</p>
+  </div>
 
-      {% if role == "Admin" %}
-        <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition duration-200">
-          <h2 class="text-xl font-semibold text-blue-700 mb-2">👤 Register New User</h2>
-          <p class="text-gray-600 mb-3">Add a new system user with a role.</p>
-          <a href="{% url 'register_user' %}" class="text-blue-600 font-medium hover:underline">Go to Register User</a>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition duration-200">
-          <h2 class="text-xl font-semibold text-blue-700 mb-2">👥 View All Users</h2>
-          <p class="text-gray-600 mb-3">See all users and their roles.</p>
-          <a href="{% url 'users_list' %}" class="text-blue-600 font-medium hover:underline">Go to Users List</a>
-        </div>
-      {% endif %}
+  <!-- Supervisors -->
+  <div class="bg-yellow-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-yellow-800 font-semibold text-lg mb-1">👨‍🏫 Supervisors</h2>
+    <p class="text-3xl font-bold text-yellow-900">{{ total_supervisors }}</p>
+  </div>
 
-      <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition duration-200">
-        <h2 class="text-xl font-semibold text-blue-700 mb-2">🔍 Check Title</h2>
-        <p class="text-gray-600 mb-3">Verify if your book title already exists.</p>
-        <a href="{% url 'check_title' %}" class="text-blue-600 font-medium hover:underline">Go to Check Title</a>
-      </div>
+  <!-- Students -->
+  <div class="bg-pink-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-pink-800 font-semibold text-lg mb-1">🎓 Students</h2>
+    <p class="text-3xl font-bold text-pink-900">{{ total_students }}</p>
+  </div>
 
-      <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition duration-200">
-        <h2 class="text-xl font-semibold text-blue-700 mb-2">📄 Check Document</h2>
-        <p class="text-gray-600 mb-3">Upload a document to check its similarity.</p>
-        <a href="{% url 'index' %}" class="text-blue-600 font-medium hover:underline">Go to Check Document</a>
-      </div>
-    </div>
-  </main>
+  <!-- Total Books -->
+  <div class="bg-indigo-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-indigo-800 font-semibold text-lg mb-1">📚 Total Books</h2>
+    <p class="text-3xl font-bold text-indigo-900">{{ total_books }}</p>
+  </div>
 
-</body>
-</html>
+  <!-- Title Checks -->
+  <div class="bg-purple-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-purple-800 font-semibold text-lg mb-1">🔍 Title Checks</h2>
+    <p class="text-3xl font-bold text-purple-900">{{ title_checks_count }}</p>
+  </div>
+
+  <!-- Document Checks -->
+  <div class="bg-red-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-red-800 font-semibold text-lg mb-1">📄 Document Checks</h2>
+    <p class="text-3xl font-bold text-red-900">{{ document_checks_count }}</p>
+  </div>
+</div>
+
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
+  <!-- User Roles Distribution -->
+  <div class="bg-white p-6 rounded-2xl shadow-md">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">📊 User Roles Distribution</h3>
+    <canvas id="userChart" class="w-full h-64"></canvas>
+  </div>
+
+  <!-- Users vs Books -->
+  <div class="bg-white p-6 rounded-2xl shadow-md">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">📈 Users vs Books</h3>
+    <canvas id="comparisonChart" class="w-full h-64"></canvas>
+  </div>
+
+  <!-- Title vs Document Checks -->
+  <div class="bg-white p-6 rounded-2xl shadow-md">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">📝 Title vs Document Checks</h3>
+    <canvas id="checksChart" class="w-full h-64"></canvas>
+  </div>
+</div>
+
+
+<!-- History Section -->
+<div class="bg-white p-6 rounded-2xl shadow-md mb-10">
+  <h3 class="text-lg font-bold text-gray-800 mb-4">🕘 Recent Similarity Checks</h3>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left table-auto">
+      <thead>
+        <tr class="bg-gray-100 text-gray-700">
+          <th class="py-2 px-4">User</th>
+          <th class="py-2 px-4">Compared With</th>
+          <th class="py-2 px-4">Uploaded Title</th>
+          <th class="py-2 px-4">Similarity</th>
+          <th class="py-2 px-4">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in recent_comparisons %}
+        <tr class="border-b">
+          <td class="py-2 px-4">{{ record.user.username }}</td>
+          <td class="py-2 px-4">{{ record.compared_with.book_title }}</td>
+          <td class="py-2 px-4">{{ record.uploaded_title }}</td>
+          <td class="py-2 px-4">{{ record.similarity_score|floatformat:2 }}%</td>
+          <td class="py-2 px-4">{{ record.timestamp|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td class="py-2 px-4 text-center" colspan="5">No recent comparisons found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  // Convert safely to numbers
+  const totalAdmins = Number('{{ total_admins|default:0 }}');
+  const totalSupervisors = Number('{{ total_supervisors|default:0 }}');
+  const totalStudents = Number('{{ total_students|default:0 }}');
+  const totalUsers = Number('{{ total_users|default:0 }}');
+  const totalBooks = Number('{{ total_books|default:0 }}');
+  const titleChecksCount = Number('{{ title_checks_count|default:0 }}');
+  const documentChecksCount = Number('{{ document_checks_count|default:0 }}');
+
+  // User Role Pie Chart
+  const userChart = document.getElementById('userChart')?.getContext('2d');
+  if (userChart) {
+    new Chart(userChart, {
+      type: 'pie',
+      data: {
+        labels: ['Admins', 'Supervisors', 'Students'],
+        datasets: [{
+          data: [totalAdmins, totalSupervisors, totalStudents],
+          backgroundColor: ['#34d399', '#60a5fa', '#facc15'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+          }
+        }
+      }
+    });
+  }
+
+  // Users vs Books Bar Chart
+  const comparisonChart = document.getElementById('comparisonChart')?.getContext('2d');
+  if (comparisonChart) {
+    new Chart(comparisonChart, {
+      type: 'bar',
+      data: {
+        labels: ['Users', 'Books'],
+        datasets: [{
+          label: 'Count',
+          data: [totalUsers, totalBooks],
+          backgroundColor: ['#6366f1', '#ec4899'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  // Title vs Document Checks Chart
+  const checksChart = document.getElementById('checksChart')?.getContext('2d');
+  if (checksChart) {
+    new Chart(checksChart, {
+      type: 'doughnut',
+      data: {
+        labels: ['Title Checks', 'Document Checks'],
+        datasets: [{
+          data: [titleChecksCount, documentChecksCount],
+          backgroundColor: ['#8b5cf6', '#f87171'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    });
+  }
+</script>
+
+{% endblock %}

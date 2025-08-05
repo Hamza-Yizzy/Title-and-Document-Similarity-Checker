@@ -1,35 +1,50 @@
+{% extends 'base_dashboard.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Users List</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 p-6">
-  <h1 class="text-3xl font-bold text-gray-800 mb-6">👥 Registered Users</h1>
 
-  <table class="min-w-full bg-white rounded-lg overflow-hidden shadow">
-    <thead class="bg-blue-600 text-white">
-      <tr>
-        <th class="py-3 px-6 text-left">Username</th>
-        <th class="py-3 px-6 text-left">Email</th>
-        <th class="py-3 px-6 text-left">Is Superuser</th>
-        <th class="py-3 px-6 text-left">Date Joined</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for user in users %}
-      <tr class="border-b hover:bg-gray-50">
-        <td class="py-3 px-6">{{ user.username }}</td>
-        <td class="py-3 px-6">{{ user.email }}</td>
-        <td class="py-3 px-6">{{ user.is_superuser }}</td>
-        <td class="py-3 px-6">{{ user.date_joined|date:"Y-m-d" }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="4" class="text-center py-4">No users found.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</body>
-</html>
+{% block title %}Registered Users{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto mt-6">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-3xl font-bold text-gray-800">👥 Registered Users</h1>
+    
+    <!-- Back to Dashboard button -->
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded shadow transition">
+      🔙 Back to Dashboard
+    </a>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full bg-white rounded-lg overflow-hidden shadow">
+      <thead class="bg-blue-600 text-white">
+        <tr>
+          <th class="py-3 px-6 text-left">Username</th>
+          <th class="py-3 px-6 text-left">Email</th>
+          <th class="py-3 px-6 text-left">Is Superuser</th>
+          <th class="py-3 px-6 text-left">Date Joined</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="py-3 px-6">{{ user.username }}</td>
+          <td class="py-3 px-6">{{ user.email }}</td>
+          <td class="py-3 px-6">
+            {% if user.is_superuser %}
+              <span class="text-green-600 font-semibold">Yes</span>
+            {% else %}
+              <span class="text-gray-600">No</span>
+            {% endif %}
+          </td>
+          <td class="py-3 px-6">{{ user.date_joined|date:"Y-m-d" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="text-center py-4 text-gray-500">No users found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

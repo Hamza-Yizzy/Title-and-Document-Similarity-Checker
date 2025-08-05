@@ -22,7 +22,7 @@
     <!-- Book Title -->
     <div class="flex flex-wrap items-center gap-3">
       <label for="book_title" class="w-full md:w-1/4 font-medium text-gray-700">Book Title:</label>
-      <div class="w-full md:w-3/4">
+      <div class="w-full md:w-5/4">
         {{ form.book_title|add_class:"form-control py-2 text-base border-gray-300 rounded-md shadow-sm" }}
       </div>
     </div>
@@ -30,7 +30,7 @@
     <!-- Authors -->
     <div class="flex flex-wrap items-center gap-3">
       <label for="authors" class="w-full md:w-1/4 font-medium text-gray-700">Authors:</label>
-      <div class="w-full md:w-3/4">
+      <div class="w-full md:w-5/4">
         {{ form.authors|add_class:"form-control py-2 text-base border-gray-300 rounded-md shadow-sm" }}
       </div>
     </div>
@@ -38,7 +38,7 @@
     <!-- Area -->
     <div class="flex flex-wrap items-center gap-3">
       <label for="area" class="w-full md:w-1/4 font-medium text-gray-700">Area:</label>
-      <div class="w-full md:w-3/4">
+      <div class="w-full md:w-5/4">
         {{ form.area|add_class:"form-control py-2 text-base border-gray-300 rounded-md shadow-sm" }}
       </div>
     </div>
@@ -46,7 +46,7 @@
     <!-- Year (Dropdown) -->
     <div class="flex flex-wrap items-center gap-3">
       <label for="year" class="w-full md:w-1/4 font-medium text-gray-700">Year:</label>
-      <div class="w-full md:w-3/4">
+      <div class="w-full md:w-5/4">
         <select id="year" name="year" required
           class="form-select w-full py-2 text-base border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
           <option value="">-- Select Year --</option>
@@ -57,7 +57,7 @@
     <!-- File -->
     <div class="flex flex-wrap items-center gap-3">
       <label for="file" class="w-full md:w-1/4 font-medium text-gray-700">Book File (PDF or Word):</label>
-      <div class="w-full md:w-3/4">
+      <div class="w-full md:w-5/4">
         {{ form.file|add_class:"form-control py-2 text-base border-gray-300 rounded-md shadow-sm" }}
         <p id="fileError" class="text-red-600 text-sm mt-2 hidden">Invalid file type. Only PDF, DOC, or DOCX files are allowed.</p>
       </div>
@@ -73,9 +73,9 @@
   </form>
 
   <!-- Back Button -->
-  <a href="{% url 'books_list' %}"
+  <a href="{% url 'dashboard' %}"
     class="mt-5 block text-center w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm transition duration-200">
-    ← Back to Book List
+    ← Back to Dashboard
   </a>
 </div>
 
