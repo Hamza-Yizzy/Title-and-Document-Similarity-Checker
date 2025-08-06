@@ -21,7 +21,21 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import Group
 from .models import ComparisonHistory
 from .utils import extract_file_content, calculate_similarity
+import os
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Book, ComparisonHistory
+from .utils import extract_file_content, calculate_similarity
+from django.contrib import messages
 from django.db.models import Count
+from .models import ComparisonHistory
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.contrib.auth.models import User
+from .models import Book, ComparisonHistory
+from .utils import extract_file_content, calculate_similarity
+# from .utils import get_user_role  ✅ Already defined in this file
+
 
 
 
@@ -117,6 +131,8 @@ def calculate_similarity(text1, text2):
         print(f"Error calculating similarity: {str(e)}")
         return 0.0
 
+
+@login_required
 def check_title(request):
     message = ''
     if request.method == 'POST':
@@ -129,7 +145,22 @@ def check_title(request):
             message = f"Your title '{title}' is already covered in the book '{matched_book.book_title}' by {matched_book.authors}."
         else:
             message = f"No books found matching the title '{title}'."
-    return render(request, 'compare/check_title.html', {'message': message})
+
+        # ✅ Save to ComparisonHistory as Title Check
+        ComparisonHistory.objects.create(
+            user=request.user,
+            compared_with=None,
+            similarity_score=0.0,
+            uploaded_title=title
+        )
+
+        # ✅ Return to the same page and pass the message
+        return render(request, 'compare/check_title.html', {'message': message})
+
+    return render(request, 'compare/check_title.html')
+
+
+
 
 # ✅ View only PDF files
 def view_book_file(request, book_id):
@@ -155,11 +186,6 @@ def view_book_file(request, book_id):
     except Exception as e:
         raise Http404(f"Error loading file: {e}")
 
-import os
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from .models import Book, ComparisonHistory
-from .utils import extract_file_content, calculate_similarity
 
 @login_required
 def compare_uploaded_books(request):
@@ -251,12 +277,41 @@ def dashboard(request):
     total_books = Book.objects.count()
 
     recent_comparisons = ComparisonHistory.objects.select_related('compared_with', 'user') \
-        .order_by('-timestamp')[:5]
+        .order_by('-timestamp')[:10]
 
-    # Count how many comparisons are title checks vs document checks
+    # === Title vs Document Checks Count ===
     title_checks_count = ComparisonHistory.objects.filter(compared_with__isnull=True).count()
     document_checks_count = ComparisonHistory.objects.filter(compared_with__isnull=False).count()
 
+    # === Document Eligibility Calculation ===
+    total_document_checks = document_checks_count
+    ineligible_document_checks = ComparisonHistory.objects.filter(
+        compared_with__isnull=False,
+        similarity_score__gt=0.20
+    ).count()
+    eligible_document_checks = total_document_checks - ineligible_document_checks
+
+    if total_document_checks > 0:
+        document_accuracy = (eligible_document_checks / total_document_checks) * 100
+    else:
+        document_accuracy = 0
+
+    # === Title Eligibility Calculation ===
+    eligible_title_count = 0
+    all_title_checks = ComparisonHistory.objects.filter(compared_with__isnull=True)
+    for check in all_title_checks:
+        normalized = check.uploaded_title.strip().lower()
+        if Book.objects.filter(book_title__iexact=normalized).exists():
+            eligible_title_count += 1
+
+    not_eligible_title_count = title_checks_count - eligible_title_count
+
+    if title_checks_count > 0:
+        title_accuracy = (eligible_title_count / title_checks_count) * 100
+    else:
+        title_accuracy = 0
+
+    # === Final Context ===
     context = {
         'role': role,
         'total_users': total_users,
@@ -267,7 +322,14 @@ def dashboard(request):
         'recent_comparisons': recent_comparisons,
         'title_checks_count': title_checks_count,
         'document_checks_count': document_checks_count,
+        'document_accuracy': round(document_accuracy, 2),
+        'title_accuracy': round(title_accuracy, 2),
+        'eligible_doc_count': eligible_document_checks,
+        'not_eligible_doc_count': ineligible_document_checks,
+        'eligible_title_count': eligible_title_count,
+        'not_eligible_title_count': not_eligible_title_count,
     }
+
     return render(request, 'compare/dashboard.html', context)
 
 
