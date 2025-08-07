@@ -345,12 +345,25 @@ def read_pdf(file):
     except Exception as e:
         return f"Error extracting PDF content: {str(e)}"
 
+from docx import Document as DocxDocument
+
+def read_docx(file):
+    try:
+        doc = DocxDocument(file)
+        text = "\n".join([para.text for para in doc.paragraphs])
+        return text
+    except Exception as e:
+        return f"Error extracting DOCX content: {str(e)}"
+
 def extract_file_content(file):
     ext = file.name.split('.')[-1].lower()
     if ext == 'pdf':
         return read_pdf(file)
+    elif ext in ['docx', 'doc']:
+        return read_docx(file)
     else:
         return None
+
 
 def calculate_similarity(text1, text2):
     try:
@@ -579,14 +592,21 @@ def delete_book(request, book_id):
         return redirect('books_list')
     return render(request, 'compare/delete_book.html', {'book': book})
 
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
 def handle_uploaded_file(request):
     if request.method == 'POST' and request.FILES.get('file'):
         file = request.FILES['file']
         ext = file.name.split('.')[-1].lower()
-        if ext != 'pdf':
-            return JsonResponse({'error': 'Only PDF files are allowed.'}, status=400)
+
+        if ext not in ['pdf', 'docx', 'doc']:
+            return JsonResponse({'error': 'Only PDF, DOCX, and DOC files are allowed.'}, status=400)
+
         file_content = extract_file_content(file)
         if file_content:
             return JsonResponse({'file_content': file_content})
+
         return JsonResponse({'error': 'Failed to extract content from the file.'}, status=400)
+
     return JsonResponse({'error': 'No file uploaded or invalid request.'}, status=400)
