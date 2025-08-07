@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\E-Hamza-SDD\Desktop\Title and Documetn Similarity Checker Git]\Title-and-Document-Similarity-Checker\venv
+set VIRTUAL_ENV=C:\Users\E-Hamza-SDD\Desktop\Title and Document Similarity Checker Git\Title-and-Document-Similarity-Checker\venv
 
 if not defined PROMPT set PROMPT=$P$G
 

@@ -13,8 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.utils.encoding import smart_str
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.forms import UserCreationForm
+from .forms import CustomUserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import user_passes_test
@@ -34,12 +33,170 @@ from django.shortcuts import render
 from django.contrib.auth.models import User
 from .models import Book, ComparisonHistory
 from .utils import extract_file_content, calculate_similarity
-# from .utils import get_user_role  ✅ Already defined in this file
+from .forms import EditUserWithPasswordForm
+import openpyxl
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import default_storage
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
+import openpyxl
+from django.contrib.auth.models import User, Group
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.core.exceptions import ValidationError
+from django.contrib.auth.hashers import make_password
+from django.shortcuts import render
+import os
 
+User = get_user_model()
 
+@csrf_exempt
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def preview_user_import(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        file = request.FILES['file']
+        path = default_storage.save('temp_import_users.xlsx', file)
+        try:
+            wb = openpyxl.load_workbook(default_storage.path(path))
+            sheet = wb.active
 
+            expected_columns = ['Username', 'Email', 'Password', 'Role']
+            first_row = [cell.value for cell in sheet[1]]
 
+            if first_row != expected_columns:
+                return JsonResponse({'status': 'error', 'message': 'Invalid column headers.'})
 
+            data = []
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                if all(row):
+                    data.append({
+                        'username': row[0],
+                        'email': row[1],
+                        'password': row[2],
+                        'role': row[3]
+                    })
+
+            return JsonResponse({'status': 'ok', 'data': data})
+        finally:
+            # Clean up the temporary file
+            os.remove(default_storage.path(path))
+    
+    return JsonResponse({'status': 'error', 'message': 'No file uploaded.'})
+
+@csrf_exempt
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def upload_user_import(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        file = request.FILES['file']
+        path = default_storage.save('temp_import_users.xlsx', file)
+        try:
+            wb = openpyxl.load_workbook(default_storage.path(path))
+            sheet = wb.active
+
+            expected_columns = ['Username', 'Email', 'Password', 'Role']
+            first_row = [cell.value for cell in sheet[1]]
+
+            if first_row != expected_columns:
+                return JsonResponse({'status': 'error', 'message': 'Invalid column headers.'})
+
+            imported = []
+            skipped = []
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                username, email, password, role = row
+
+                if not username or not email or not password or not role:
+                    skipped.append(username or "Unknown")
+                    continue
+
+                if User.objects.filter(username=username).exists():
+                    skipped.append(username)
+                    continue
+
+                user = User.objects.create(
+                    username=username,
+                    email=email,
+                    password=make_password(password),
+                    is_superuser=(role == 'Admin'),
+                    is_staff=(role == 'Admin')
+                )
+
+                group, _ = Group.objects.get_or_create(name=role)
+                user.groups.add(group)
+
+                imported.append(username)
+
+            return JsonResponse({
+                'status': 'ok',
+                'imported': imported,
+                'skipped': skipped,
+                'message': 'Users uploaded successfully.'
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+        finally:
+            os.remove(default_storage.path(path))
+    
+    return JsonResponse({'status': 'error', 'message': 'No file uploaded or invalid request method.'})
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ImportUsersView(View):
+    def post(self, request, *args, **kwargs):
+        excel_file = request.FILES.get('file')
+        if not excel_file:
+            return JsonResponse({'status': False, 'message': 'No file uploaded'}, status=400)
+
+        try:
+            wb = openpyxl.load_workbook(excel_file)
+            sheet = wb.active
+
+            # Expected header
+            expected_columns = ['username', 'email', 'password', 'role']
+            header = [cell.value.lower() if cell.value else '' for cell in sheet[1]]
+
+            if header != expected_columns:
+                return JsonResponse({'status': False, 'message': 'Invalid Excel format. Columns must be: username, email, password, role'}, status=400)
+
+            imported = []
+            skipped = []
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                username, email, password, role = row
+
+                if not username or not email or not password or not role:
+                    skipped.append(username or "Unknown")
+                    continue
+
+                if User.objects.filter(username=username).exists():
+                    skipped.append(username)
+                    continue
+
+                user = User.objects.create(
+                    username=username,
+                    email=email,
+                    password=make_password(password),
+                    is_superuser=(role == 'Admin'),
+                    is_staff=(role == 'Admin')
+                )
+
+                group, _ = Group.objects.get_or_create(name=role)
+                user.groups.add(group)
+
+                imported.append(username)
+
+            return JsonResponse({
+                'status': True,
+                'imported': imported,
+                'skipped': skipped
+            })
+
+        except Exception as e:
+            return JsonResponse({'status': False, 'message': str(e)}, status=500)
 
 def logout_view(request):
     logout(request)
@@ -59,48 +216,123 @@ def login_view(request):
             messages.error(request, "Invalid username or password")
     return render(request, 'compare/login.html')
 
-
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def register_user(request):
-    form = UserCreationForm(request.POST or None)
-    
-    if request.method == 'POST' and form.is_valid():
-        user = form.save()
+    form = CustomUserCreationForm(request.POST or None)
+
+    if request.method == 'POST':
         role = request.POST.get('role')
 
-        if role:
-            group, created = Group.objects.get_or_create(name=role)
-            user.groups.add(group)
+        if form.is_valid():
+            user = form.save(commit=False)
 
-        messages.success(request, "User created successfully.")
-        return redirect('dashboard')
+            if role == 'Admin':
+                user.is_superuser = True
+                user.is_staff = True
+            else:
+                user.is_superuser = False
+                user.is_staff = False
 
-    # 👇 ADD THIS LINE to get current user's role
+            user.save()
+
+            if role:
+                group, created = Group.objects.get_or_create(name=role)
+                user.groups.add(group)
+
+            messages.success(request, "User created successfully.")
+            return redirect('dashboard')
+
     role = get_user_role(request.user)
 
     return render(request, 'compare/register_user.html', {
         'form': form,
-        'role': role  # 👈 pass role to template
+        'role': role
     })
 
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def edit_user(request, user_id):
+    user_obj = get_object_or_404(User, pk=user_id)
+    form = EditUserWithPasswordForm(request.POST or None, instance=user_obj)
+    user_groups = user_obj.groups.values_list('name', flat=True)
+    selected_role = user_groups[0] if user_groups else 'Student'
+
+    if request.method == 'POST' and form.is_valid():
+        user = form.save(commit=False)
+        password = form.cleaned_data.get("password1")
+        if password:
+            user.set_password(password)
+        else:
+            user.password = user_obj.password
+
+        role = request.POST.get('role')
+        user.groups.clear()
+        if role:
+            group, _ = Group.objects.get_or_create(name=role)
+            user.groups.add(group)
+
+        user.is_superuser = (role == 'Admin')
+        user.is_staff = (role == 'Admin')
+        user.save()
+
+        messages.success(request, 'User updated successfully.')
+        return redirect('users_list')
+
+    return render(request, 'compare/edit_user.html', {
+        'form': form,
+        'user': user_obj,
+        'selected_role': selected_role
+    })
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def delete_user(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+    if request.method == 'POST':
+        user.delete()
+        messages.success(request, 'User deleted successfully.')
+        return redirect('users_list')
+    return redirect('users_list')
+
+from django.shortcuts import render
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required, user_passes_test
+import json
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def users_list(request):
+    users = User.objects.all()
+    role = get_user_role(request.user)
+    
+    # Serialize users data for JavaScript
+    users_data = [
+        {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'date_joined': user.date_joined.strftime('%Y-%m-%d'),
+            'is_superuser': user.is_superuser,
+            'groups': [group.name for group in user.groups.all()]
+        } for user in users
+    ]
+    users_json = json.dumps(users_data)
+
+    return render(request, 'compare/users_list.html', {
+        'users': users,
+        'users_json': users_json,
+        'role': role
+    })
 
 def get_user_role(user):
-    if user.is_superuser:
+    if user.is_superuser or user.groups.filter(name='Admin').exists():
         return 'Admin'
     elif user.groups.filter(name='Supervisor').exists():
         return 'Supervisor'
     else:
         return 'Student'
 
-@login_required
-@user_passes_test(lambda u: u.is_superuser)
-def users_list(request):
-    users = User.objects.all()
-    role = get_user_role(request.user)  # Add this line
-    return render(request, 'compare/users_list.html', {'users': users, 'role': role})
-
-# ✅ Only allow PDF
 def read_pdf(file):
     try:
         reader = PyPDF2.PdfReader(file)
@@ -113,7 +345,6 @@ def read_pdf(file):
     except Exception as e:
         return f"Error extracting PDF content: {str(e)}"
 
-# ✅ Removed DOCX logic - accept only PDF
 def extract_file_content(file):
     ext = file.name.split('.')[-1].lower()
     if ext == 'pdf':
@@ -131,7 +362,6 @@ def calculate_similarity(text1, text2):
         print(f"Error calculating similarity: {str(e)}")
         return 0.0
 
-
 @login_required
 def check_title(request):
     message = ''
@@ -146,7 +376,6 @@ def check_title(request):
         else:
             message = f"No books found matching the title '{title}'."
 
-        # ✅ Save to ComparisonHistory as Title Check
         ComparisonHistory.objects.create(
             user=request.user,
             compared_with=None,
@@ -154,15 +383,10 @@ def check_title(request):
             uploaded_title=title
         )
 
-        # ✅ Return to the same page and pass the message
         return render(request, 'compare/check_title.html', {'message': message})
 
     return render(request, 'compare/check_title.html')
 
-
-
-
-# ✅ View only PDF files
 def view_book_file(request, book_id):
     try:
         book = Book.objects.get(book_id=book_id)
@@ -170,12 +394,10 @@ def view_book_file(request, book_id):
         ext = book.file.name.split('.')[-1].lower()
 
         if ext == 'pdf':
-            # View PDF inline
             response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
             response['Content-Disposition'] = f'inline; filename="{smart_str(book.file.name)}"'
             return response
         elif ext in ['doc', 'docx']:
-            # Download Word document
             response = FileResponse(open(file_path, 'rb'), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
             response['Content-Disposition'] = f'attachment; filename="{smart_str(book.file.name)}"'
             return response
@@ -185,7 +407,6 @@ def view_book_file(request, book_id):
         raise Http404("Book not found.")
     except Exception as e:
         raise Http404(f"Error loading file: {e}")
-
 
 @login_required
 def compare_uploaded_books(request):
@@ -201,7 +422,6 @@ def compare_uploaded_books(request):
         file_name = os.path.splitext(file1.name)[0].strip().lower()
         books = Book.objects.all()
 
-        # Step 1: Try title-based match
         matched_book = None
         for book in books:
             if file_name == book.book_title.strip().lower():
@@ -217,7 +437,6 @@ def compare_uploaded_books(request):
                 if similarity > 0.20:
                     message = "Your book is not eligible due to high similarity."
 
-                # Save comparison
                 ComparisonHistory.objects.create(
                     user=request.user,
                     compared_with=matched_book,
@@ -231,7 +450,6 @@ def compare_uploaded_books(request):
                     'eligibility_message': message
                 })
 
-        # Step 2: Fallback - find most similar file content
         highest_similarity = 0
         most_similar_book = None
         for book in books:
@@ -248,7 +466,6 @@ def compare_uploaded_books(request):
         if highest_similarity > 0.20:
             message = "Your book is not eligible due to high similarity."
 
-        # Save fallback comparison
         if most_similar_book:
             ComparisonHistory.objects.create(
                 user=request.user,
@@ -265,53 +482,61 @@ def compare_uploaded_books(request):
 
     return redirect('index')
 
+from django.db.models import Q
+from django.contrib.auth.models import Group
 
 @login_required
 def dashboard(request):
-    role = get_user_role(request.user)
+    user = request.user
+    role = get_user_role(user)
 
-    total_users = User.objects.count()
-    total_admins = User.objects.filter(is_superuser=True).count()
-    total_supervisors = User.objects.filter(groups__name='Supervisor').count()
-    total_students = total_users - total_admins - total_supervisors
     total_books = Book.objects.count()
 
-    recent_comparisons = ComparisonHistory.objects.select_related('compared_with', 'user') \
-        .order_by('-timestamp')[:10]
+    if role == 'Admin':
+        total_users = User.objects.count()
+        total_admins = User.objects.filter(is_superuser=True).count()
+        total_supervisors = User.objects.filter(groups__name='Supervisor').count()
+        total_students = total_users - total_admins - total_supervisors
 
-    # === Title vs Document Checks Count ===
-    title_checks_count = ComparisonHistory.objects.filter(compared_with__isnull=True).count()
-    document_checks_count = ComparisonHistory.objects.filter(compared_with__isnull=False).count()
+        recent_comparisons = ComparisonHistory.objects.select_related('compared_with', 'user').order_by('-timestamp')[:10]
+        title_checks = ComparisonHistory.objects.filter(compared_with__isnull=True)
+        document_checks = ComparisonHistory.objects.filter(compared_with__isnull=False)
 
-    # === Document Eligibility Calculation ===
-    total_document_checks = document_checks_count
-    ineligible_document_checks = ComparisonHistory.objects.filter(
-        compared_with__isnull=False,
-        similarity_score__gt=0.20
-    ).count()
-    eligible_document_checks = total_document_checks - ineligible_document_checks
+    elif role == 'Supervisor':
+        total_users = total_admins = 0
+        total_supervisors = User.objects.filter(groups__name='Supervisor').count()
+        student_group = Group.objects.get(name='Student')
+        student_users = User.objects.filter(groups=student_group)
+        total_students = student_users.count()
 
-    if total_document_checks > 0:
-        document_accuracy = (eligible_document_checks / total_document_checks) * 100
+        recent_comparisons = ComparisonHistory.objects.filter(user__in=student_users).select_related('compared_with').order_by('-timestamp')[:10]
+        title_checks = ComparisonHistory.objects.filter(user__in=student_users, compared_with__isnull=True)
+        document_checks = ComparisonHistory.objects.filter(user__in=student_users, compared_with__isnull=False)
+
     else:
-        document_accuracy = 0
+        total_users = total_admins = 0
+        total_supervisors = User.objects.filter(groups__name='Supervisor').count()
+        total_students = User.objects.filter(groups__name='Student').count()
 
-    # === Title Eligibility Calculation ===
+        recent_comparisons = ComparisonHistory.objects.filter(user=user).select_related('compared_with').order_by('-timestamp')[:10]
+        title_checks = ComparisonHistory.objects.filter(user=user, compared_with__isnull=True)
+        document_checks = ComparisonHistory.objects.filter(user=user, compared_with__isnull=False)
+
+    title_checks_count = title_checks.count()
+    document_checks_count = document_checks.count()
+
+    ineligible_document_checks = document_checks.filter(similarity_score__gt=0.20).count()
+    eligible_document_checks = document_checks_count - ineligible_document_checks
+    document_accuracy = (eligible_document_checks / document_checks_count) * 100 if document_checks_count > 0 else 0
+
     eligible_title_count = 0
-    all_title_checks = ComparisonHistory.objects.filter(compared_with__isnull=True)
-    for check in all_title_checks:
+    for check in title_checks:
         normalized = check.uploaded_title.strip().lower()
         if Book.objects.filter(book_title__iexact=normalized).exists():
             eligible_title_count += 1
-
     not_eligible_title_count = title_checks_count - eligible_title_count
+    title_accuracy = (eligible_title_count / title_checks_count) * 100 if title_checks_count > 0 else 0
 
-    if title_checks_count > 0:
-        title_accuracy = (eligible_title_count / title_checks_count) * 100
-    else:
-        title_accuracy = 0
-
-    # === Final Context ===
     context = {
         'role': role,
         'total_users': total_users,
@@ -331,9 +556,6 @@ def dashboard(request):
     }
 
     return render(request, 'compare/dashboard.html', context)
-
-
-
 
 def index(request):
     return render(request, 'compare/index.html')
@@ -357,7 +579,6 @@ def delete_book(request, book_id):
         return redirect('books_list')
     return render(request, 'compare/delete_book.html', {'book': book})
 
-# ✅ Allow only PDF in AJAX uploads
 def handle_uploaded_file(request):
     if request.method == 'POST' and request.FILES.get('file'):
         file = request.FILES['file']

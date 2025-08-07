@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\E-Hamza-SDD\Desktop\Title and Documetn Similarity Checker Git]\Title-and-Document-Similarity-Checker\venv"
+VIRTUAL_ENV="C:\Users\E-Hamza-SDD\Desktop\Title and Document Similarity Checker Git\Title-and-Document-Similarity-Checker\venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
