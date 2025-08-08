@@ -29,13 +29,21 @@
         </div>
 
         <!-- Avatar -->
-        <div class="flex flex-col items-center mt-6 mb-2">
-          <div class="w-20 h-20 rounded-full border-4 border-blue-500 overflow-hidden shadow-md">
-            <img src="https://i.pravatar.cc/150?img=3" alt="User Avatar" class="w-full h-full object-cover" />
-          </div>
-          <p class="text-sm font-semibold mt-2">{{ role }}</p>
-          <p class="text-xs text-gray-600">Logged in as <strong>{{ user.username }}</strong></p>
+        {% load static %}
+      <div class="flex flex-col items-center mt-6 mb-2">
+        <div class="w-20 h-20 rounded-full border-4 border-blue-500 overflow-hidden shadow-md">
+          {% if role == "Admin" %}
+            <img src="{% static 'images/shirwac.png' %}" alt="Admin Avatar" class="w-full h-full object-cover" />
+          {% elif role == "Supervisor" %}
+            <img src="{% static 'images/raaxeeste.png' %}" alt="Supervisor Avatar" class="w-full h-full object-cover" />
+          {% else %}
+            <img src="{% static 'images/xuska.png' %}" alt="Student Avatar" class="w-full h-full object-cover" />
+          {% endif %}
         </div>
+        <p class="text-sm font-semibold mt-2">{{ role }}</p>
+        <p class="text-xs text-gray-600">Logged in as <strong>{{ user.username }}</strong></p>
+      </div>
+
 
         <!-- Navigation Links -->
         <nav class="p-4 space-y-3 mt-4">
