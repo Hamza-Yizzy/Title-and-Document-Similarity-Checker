@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Comparison Result - Similarity Checker</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-400 via-purple-400 to-indigo-500 min-h-screen flex items-center justify-center p-4">
+
+<div class="bg-white rounded-xl shadow-xl p-8 w-full max-w-2xl">
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">
+        📊 Comparison Result
+    </h1>
+
+    {% if most_similar_book %}
+        <div class="space-y-4">
+            <h2 class="text-xl font-semibold text-gray-700">📘 Matched Book Details</h2>
+            <p><strong>Title:</strong> {{ most_similar_book.book_title }}</p>
+            <p><strong>Authors:</strong> {{ most_similar_book.authors }}</p>
+            <p><strong>Area:</strong> {{ most_similar_book.area }}</p>
+            <p><strong>Year:</strong> {{ most_similar_book.year }}</p>
+
+            <p>
+                <strong>Similarity Percentage:</strong>
+                <span class="{% if similarity_percentage < 20 %}text-green-600{% else %}text-red-600{% endif %} font-bold">
+                    {{ similarity_percentage }}%
+                </span>
+            </p>
+
+            <div class="{% if similarity_percentage < 20 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %} px-4 py-3 rounded-md text-center font-semibold mt-4">
+                {{ eligibility_message }}
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center text-gray-800">
+            <h2 class="text-xl font-semibold mb-2">⚠️ No Matching Book Found</h2>
+            <p>{{ message }}</p>
+        </div>
+    {% endif %}
+
+    <!-- Back Button -->
+    <div class="text-center mt-6">
+        <a href="{% url 'index' %}" class="btn btn-primary px-5 py-2 rounded-full">
+            <i class="fas fa-arrow-left me-2"></i>Back to Home
+        </a>
+    </div>
+</div>
+
+<!-- Bootstrap JS (Optional) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

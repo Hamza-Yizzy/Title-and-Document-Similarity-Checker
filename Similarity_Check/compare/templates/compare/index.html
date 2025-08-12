@@ -1,0 +1,105 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Similarity Checker</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-400 to-indigo-400 min-h-screen flex items-center justify-center relative font-sans">
+
+    <!-- Logout Icon -->
+    <a href="{% url 'logout' %}" class="absolute top-6 left-6 text-white text-2xl z-10 hover:text-red-200">
+        <i class="fas fa-sign-out-alt"></i>
+    </a>
+
+    <!-- Register Book Button -->
+    <a href="{% url 'books_list' %}" class="absolute top-6 right-6 bg-blue-600 hover:bg-blue-800 text-white px-4 py-2 rounded shadow-md transition duration-200">
+        Register New Book
+    </a>
+
+    <div class="bg-white rounded-xl shadow-2xl px-8 py-10 max-w-2xl w-full transition hover:shadow-3xl duration-300">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">📚 Document Similarity Checker</h1>
+
+        <form id="uploadForm" method="POST" enctype="multipart/form-data" action="{% url 'compare_uploaded_books' %}">
+            {% csrf_token %}
+            
+            <!-- Upload Section -->
+            <div class="mb-4">
+                <label for="fileInput" class="block font-medium text-gray-700 mb-1">Upload PDF File</label>
+                <input type="file" id="fileInput" name="file1" accept=".pdf,.docx,.doc" class="form-control" required>
+                <p id="message" class="text-sm text-red-600 mt-1"></p>
+            </div>
+
+            <!-- Extracted Text Area -->
+            <div class="mb-4">
+                <label class="block font-medium text-gray-700 mb-1">Extracted Content</label>
+                <textarea id="fileContent" name="file_content" class="form-control h-40 resize-none" readonly placeholder="Content from uploaded file will appear here..."></textarea>
+            </div>
+
+            <!-- Buttons -->
+            <button type="submit" class="btn btn-primary w-100 mb-2">🔍 Check</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary w-100">← Back to Dashboard</a>
+        </form>
+    </div>
+
+    <!-- JS for file processing -->
+<script>
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+        const fileInput = document.getElementById('fileInput');
+        const fileContent = document.getElementById('fileContent');
+        const message = document.getElementById('message');
+        const formData = new FormData();
+
+        if (fileInput.files.length === 0) {
+            message.textContent = "Please select a file.";
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const fileExtension = file.name.split('.').pop().toLowerCase();  // ✅ moved here
+        const allowedExtensions = ['pdf', 'docx', 'doc'];
+
+        if (!allowedExtensions.includes(fileExtension)) {
+            message.textContent = "Only PDF, DOCX, and DOC files are allowed.";
+            fileInput.value = "";
+            return;
+        }
+
+        formData.append('file', file);
+
+        fetch("{% url 'handle_uploaded_file' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.file_content) {
+                fileContent.value = data.file_content;
+                message.textContent = "";
+            } else {
+                message.textContent = data.error || "Failed to extract content.";
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            message.textContent = "An error occurred while processing the file.";
+        });
+    });
+</script>
+
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

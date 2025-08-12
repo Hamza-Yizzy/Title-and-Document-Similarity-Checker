@@ -1,0 +1,270 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Similarity Checker{% endblock %}
+
+{% block content %}
+<!-- Welcome -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+  <div>
+    <h1 class="text-4xl font-extrabold text-gray-900 mb-1">Welcome, {{ user.username }} 👋</h1>
+    <p class="text-gray-700">Your role: <span class="font-semibold text-blue-600">{{ role }}</span></p>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+  {% if role == 'Admin' %}
+  <!-- Total Users -->
+  <div class="bg-blue-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-blue-800 font-semibold text-lg mb-1">👥 Total Users</h2>
+    <p class="text-3xl font-bold text-blue-900">{{ total_users }}</p>
+  </div>
+
+  <!-- Admins -->
+  <div class="bg-green-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-green-800 font-semibold text-lg mb-1">🛡️ Admins</h2>
+    <p class="text-3xl font-bold text-green-900">{{ total_admins }}</p>
+  </div>
+  {% endif %}
+
+  {% if role != 'Student' %}
+  <!-- Supervisors -->
+  <div class="bg-yellow-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-yellow-800 font-semibold text-lg mb-1">👨‍🏫 Supervisors</h2>
+    <p class="text-3xl font-bold text-yellow-900">{{ total_supervisors }}</p>
+  </div>
+
+  <!-- Students Count -->
+  <div class="bg-pink-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-pink-800 font-semibold text-lg mb-1">🎓 Students</h2>
+    <p class="text-3xl font-bold text-pink-900">{{ total_students }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Total Books (All roles) -->
+  <div class="bg-indigo-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-indigo-800 font-semibold text-lg mb-1">📚 Total Books</h2>
+    <p class="text-3xl font-bold text-indigo-900">{{ total_books }}</p>
+  </div>
+
+  <!-- Title Checks (All roles) -->
+  <div class="bg-purple-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-purple-800 font-semibold text-lg mb-1">🔍 Title Checks</h2>
+    <p class="text-3xl font-bold text-purple-900">{{ title_checks_count }}</p>
+  </div>
+
+  <!-- Document Checks (All roles) -->
+  <div class="bg-red-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-red-800 font-semibold text-lg mb-1">📄 Document Checks</h2>
+    <p class="text-3xl font-bold text-red-900">{{ document_checks_count }}</p>
+  </div>
+
+  <!-- ✅ Document Accuracy -->
+  <div class="bg-teal-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-teal-800 font-semibold text-lg mb-1">🎯 Document Eligibility Rate</h2>
+    <p class="text-3xl font-bold text-teal-900">{{ document_accuracy }}%</p>
+  </div>
+
+  <!-- ✅ Title Accuracy -->
+  <div class="bg-emerald-100 p-6 rounded-2xl shadow-md">
+    <h2 class="text-emerald-800 font-semibold text-lg mb-1">🎯 Title Eligibility Rate</h2>
+    <p class="text-3xl font-bold text-emerald-900">{{ title_accuracy }}%</p>
+  </div>
+</div>
+
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
+  {% if role == 'Admin' %}
+  <!-- User Roles Distribution -->
+  <div class="bg-white p-6 rounded-2xl shadow-md">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">📊 User Roles Distribution</h3>
+    <canvas id="userChart" class="w-full h-64"></canvas>
+  </div>
+
+  <!-- Users vs Books -->
+  <div class="bg-white p-6 rounded-2xl shadow-md">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">📈 Users vs Books</h3>
+    <canvas id="comparisonChart" class="w-full h-64"></canvas>
+  </div>
+  {% endif %}
+
+  <!-- Title vs Document Checks (All roles) -->
+  <div class="bg-white p-6 rounded-2xl shadow-md">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">📝 Title vs Document Checks</h3>
+    <canvas id="checksChart" class="w-full h-64"></canvas>
+  </div>
+</div>
+<!-- Eligibility Accuracy (All roles) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6 mb-10">
+  <!-- Title Eligibility -->
+  <div class="bg-white p-6 rounded-2xl shadow-md">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">Title Eligibility Accuracy</h3>
+    <canvas id="titleAccuracyChart" class="w-full h-64"></canvas>
+  </div>
+
+  <!-- Document Eligibility -->
+  <div class="bg-white p-6 rounded-2xl shadow-md">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">Document Eligibility Accuracy</h3>
+    <canvas id="documentAccuracyChart" class="w-full h-64"></canvas>
+  </div>
+</div>
+
+
+<!-- Recent Similarity Checks Table (Admin + Supervisor only) -->
+{% if role != 'Student' %}
+<div class="bg-white p-6 rounded-2xl shadow-md mb-10">
+  <h3 class="text-lg font-bold text-gray-800 mb-4">🕘 Recent Similarity Checks</h3>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left table-auto">
+      <thead>
+        <tr class="bg-gray-100 text-gray-700">
+          <th class="py-2 px-4">User</th>
+          <th class="py-2 px-4">Compared With</th>
+          <th class="py-2 px-4">Uploaded Title</th>
+          <th class="py-2 px-4">Similarity</th>
+          <th class="py-2 px-4">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in recent_comparisons %}
+        <tr class="border-b">
+          <td class="py-2 px-4">{{ record.user.username }}</td>
+          <td class="py-2 px-4">{{ record.compared_with.book_title }}</td>
+          <td class="py-2 px-4">{{ record.uploaded_title }}</td>
+          <td class="py-2 px-4">{{ record.similarity_score|floatformat:2 }}%</td>
+          <td class="py-2 px-4">{{ record.timestamp|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td class="py-2 px-4 text-center" colspan="5">No recent comparisons found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  const totalAdmins = Number('{{ total_admins|default:0 }}');
+  const totalSupervisors = Number('{{ total_supervisors|default:0 }}');
+  const totalStudents = Number('{{ total_students|default:0 }}');
+  const totalUsers = Number('{{ total_users|default:0 }}');
+  const totalBooks = Number('{{ total_books|default:0 }}');
+  const titleChecksCount = Number('{{ title_checks_count|default:0 }}');
+  const documentChecksCount = Number('{{ document_checks_count|default:0 }}');
+  const eligibleDocCount = Number('{{ eligible_doc_count|default:0 }}');
+  const notEligibleDocCount = Number('{{ not_eligible_doc_count|default:0 }}');
+  const eligibleTitleCount = Number('{{ eligible_title_count|default:0 }}');
+  const notEligibleTitleCount = Number('{{ not_eligible_title_count|default:0 }}');
+  const role = '{{ role }}';
+
+  if (role === 'Admin') {
+    const userChart = document.getElementById('userChart')?.getContext('2d');
+    if (userChart) {
+      new Chart(userChart, {
+        type: 'pie',
+        data: {
+          labels: ['Admins', 'Supervisors', 'Students'],
+          datasets: [{
+            data: [totalAdmins, totalSupervisors, totalStudents],
+            backgroundColor: ['#34d399', '#60a5fa', '#facc15'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+    }
+
+    const comparisonChart = document.getElementById('comparisonChart')?.getContext('2d');
+    if (comparisonChart) {
+      new Chart(comparisonChart, {
+        type: 'bar',
+        data: {
+          labels: ['Users', 'Books'],
+          datasets: [{
+            label: 'Count',
+            data: [totalUsers, totalBooks],
+            backgroundColor: ['#6366f1', '#ec4899'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+  }
+
+  // All: Title vs Document Checks
+  const checksChart = document.getElementById('checksChart')?.getContext('2d');
+  if (checksChart) {
+    new Chart(checksChart, {
+      type: 'doughnut',
+      data: {
+        labels: ['Title Checks', 'Document Checks'],
+        datasets: [{
+          data: [titleChecksCount, documentChecksCount],
+          backgroundColor: ['#8b5cf6', '#f87171'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+
+  // ✅ Title Eligibility Chart
+const titleAccuracyChart = document.getElementById('titleAccuracyChart')?.getContext('2d');
+if (titleAccuracyChart) {
+  new Chart(titleAccuracyChart, {
+    type: 'pie',
+    data: {
+      labels: ['Eligible Titles', 'Not Eligible Titles'],
+      datasets: [{
+        data: [notEligibleTitleCount, eligibleTitleCount],
+        backgroundColor: ['#10b981', '#ef4444'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+}
+
+// ✅ Document Eligibility Chart
+const documentAccuracyChart = document.getElementById('documentAccuracyChart')?.getContext('2d');
+if (documentAccuracyChart) {
+  new Chart(documentAccuracyChart, {
+    type: 'pie',
+    data: {
+      labels: ['Eligible Documents', 'Not Eligible Documents'],
+      datasets: [{
+        data: [eligibleDocCount, notEligibleDocCount],
+        backgroundColor: ['#22c55e', '#f43f5e'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+}
+
+</script>
+{% endblock %}
